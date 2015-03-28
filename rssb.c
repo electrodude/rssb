@@ -424,7 +424,7 @@ line:
 	{
 		case 0   : goto end;
 		case ';' : p++; goto comment;
-		case 'r' : p++; goto s;
+		case 'r' : ts = p; p++; goto s;
 		case ' ' :
 		case '\t':
 		case '\n':
@@ -492,6 +492,17 @@ b:
 	goto label;
 
 gap:
+	//printf("gap: %c\n", *p);
+	switch (*p)
+	{
+		case 0   : goto end;
+		case ' ' :
+		case '\t': goto expr_entry;
+	}
+
+	goto label_l;
+
+expr_entry:
 	printf("rssb\n");
 	isinstr = 1;
 	{
@@ -510,16 +521,6 @@ gap:
 			exit(1);
 		}
 	}
-
-	//printf("gap: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto end;
-		case ' ' :
-		case '\t': goto expr;
-	}
-
-	goto error;
 
 expr:
 	//printf("expr: %c\n", *p);
