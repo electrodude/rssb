@@ -106,7 +106,8 @@ int getsymbol(char* p)
 		symtab = symtab[*p].next;
 		if (symtab == NULL)
 		{
-			printf("\nUnknown symbol: %p\n", s2);
+			printf("\nUnknown symbol: %s\n", s2);
+			exit(1);
 			return -1;
 		}
 		p++;
@@ -215,10 +216,12 @@ int operand_eval(operand* this)
 				}
 			}
 			printf("Error: unknown op: %c\n", this->val.binop.op);
+			exit(1);
 			return 0;
 		}
 	}
 	printf("Error: unknown value type: %d\n", this->tp);
+	exit(1);
 }
 
 void operand_kill(operand* this)
@@ -248,6 +251,7 @@ void operand_kill(operand* this)
 		default:
 		{
 			printf("Error: unknown value type: %d\n", this->tp);
+			//exit(1); // who cares about memory leaks? :)
 			break;
 		}
 	}
@@ -366,6 +370,7 @@ void fold(char nextop)
 	if (nextop == 0 && stack_peek(ostack) == '(')
 	{
 		printf("Error: unmatched left parentheses\n");
+		exit(1);
 	}
 }
 
@@ -494,6 +499,7 @@ gap:
 		if (stray != 0)
 		{
 			printf("Error: stray operator: %c\n", stray);
+			exit(1);
 		}
 	}
 	{
@@ -501,6 +507,7 @@ gap:
 		if (stray != NULL)
 		{
 			printf("Error: stray value: %d\n", operand_eval(stray));
+			exit(1);
 		}
 	}
 
@@ -616,6 +623,7 @@ rparen:
 	if (lp != '(')
 	{
 		printf("Error: unmatched right parentheses");
+		exit(1);
 	}
 	p++;
 
@@ -623,6 +631,7 @@ rparen:
 
 error:
 	printf("Parse error at %d\n", p-ps);
+	exit(1);
 
 end:	; // silly compile error without the ;
 	int* mem2 = malloc(pc*sizeof(int));
