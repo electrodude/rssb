@@ -266,51 +266,62 @@ typedef struct cons
 
 typedef struct stack
 {
-	cons* top;
+	void** base;
+	int top;
+	int len;
 } stack;
+
+stack* stack_new()
+{
+	stack* this = malloc(sizeof(stack));
+
+	this->len = 1;
+	this->base = malloc(this->len*sizeof(void*));
+	this->top = 0;
+
+	return this;
+}
 
 void stack_push(stack* this, void* v)
 {
-	cons* top = malloc(sizeof(cons));
+	this->top++;
 
-	top->this = v;
-	top->next = this->top;
-	this->top = top;
+	if (this->top >= this->len)
+	{
+		this->len *= 2;
+		this->base = realloc(this->base, this->len*sizeof(void*));
+		printf("resize stack to %d\n", this->len);
+	}
+
+	this->base[this->top] = v;
 }
 
 void* stack_pop(stack* this)
 {
-	if (this->top == NULL)
+	if (this->top <= 0)
 	{
 		return NULL;
 	}
 
-	void* val = this->top->this;
-	cons* next = this->top->next;
-
-	free(this->top);
-
-	this->top = next;
-
-	return val;
+	return this->base[this->top--];
 }
 
 void* stack_peek(stack* this)
 {
-	if (this->top == NULL)
+	if (this->top <= 0)
 	{
 		return NULL;
 	}
 
-	return this->top->this;
+	return this->base[this->top];
 }
 	
 
 // assembler
 
-stack vstack;
+stack* vstack;
 
-stack ostack;
+stack* ostack;
 
 char* tok2str(char* start, char* end)
 {
@@ -343,16 +354,16 @@ void fold(char nextop)
 
 	char topop;
 
-	while (precedence(nextop) < precedence(topop = stack_peek(&ostack)))
+	while (precedence(nextop) < precedence(topop = stack_peek(ostack)))
 	{
-		char op = stack_pop(&ostack);
+		char op = stack_pop(ostack);
 		printf("fold: op %c (0x%x)\n", op, op);
-		operand* rhs = op != 'n' ? stack_pop(&vstack) : NULL;
-		operand* lhs = stack_pop(&vstack);
-		stack_push(&vstack, binop_new(op, lhs, rhs));
+		operand* rhs = op != 'n' ? stack_pop(vstack) : NULL;
+		operand* lhs = stack_pop(vstack);
+		stack_push(vstack, binop_new(op, lhs, rhs));
 	}
 
-	if (nextop == 0 && stack_peek(&ostack) == '(')
+	if (nextop == 0 && stack_peek(ostack) == '(')
 	{
 		printf("Error: unmatched left parentheses\n");
 	}
@@ -387,8 +398,7 @@ newline:
 	if (isinstr)
 	{
 	
-		mem[pc] = stack_pop(&vstack);
-		printf("%d: %d\n", pc, mem[pc]);
+		mem[pc] = stack_pop(vstack);
 
 		pc++;
 		if (pc >= memlen)
@@ -480,14 +490,14 @@ gap:
 	printf("rssb\n");
 	isinstr = 1;
 	{
-		char stray = stack_peek(&ostack);
+		char stray = stack_peek(ostack);
 		if (stray != 0)
 		{
 			printf("Error: stray operator: %c\n", stray);
 		}
 	}
 	{
-		operand* stray = stack_peek(&vstack);
+		operand* stray = stack_peek(vstack);
 		if (stray != NULL)
 		{
 			printf("Error: stray value: %d\n", operand_eval(stray));
@@ -523,7 +533,7 @@ expr:
 
 lparen:
 	printf("lparen: %c\n", *p);
-	stack_push(&ostack, '(');
+	stack_push(ostack, '(');
 	p++;
 
 	goto expr;
@@ -541,7 +551,7 @@ num_l:
 
 	s = tok2str(ts, p);
 	printf("num: %s\n", s);
-	stack_push(&vstack, int_new(atoi(s)));
+	stack_push(vstack, int_new(atoi(s)));
 	free(s);
 
 	goto operator;
@@ -558,19 +568,19 @@ ident_l:
 
 	s = tok2str(ts, p);
 	printf("ident: %s\n", s);
-	stack_push(&vstack, ident_new(s));
+	stack_push(vstack, ident_new(s));
 
 	goto operator;
 
 unm:
 	printf("unm: %c\n", *p);
-	stack_push(&ostack, 'n');
+	stack_push(ostack, 'n');
 	p++;
 	goto expr;
 
 here:
 	printf("here: %c\n", *p);
-	stack_push(&vstack, int_new(pc));
+	stack_push(vstack, int_new(pc));
 	p++;
 	goto operator;
 
@@ -591,7 +601,7 @@ operator:
 		{
 			fold(*p);
 			printf("operator: %c\n", *p);
-			stack_push(&ostack, *p);
+			stack_push(ostack, *p);
 			p++; goto expr;
 		}
 		case ')' : goto rparen;
@@ -602,7 +612,7 @@ operator:
 rparen:
 	printf("rparen: %c\n", *p);
 	fold(')');
-	char lp = stack_pop(&ostack);
+	char lp = stack_pop(ostack);
 	if (lp != '(')
 	{
 		printf("Error: unmatched right parentheses");
@@ -637,6 +647,9 @@ end:	; // silly compile error without the ;
 
 int main(int argc, char** argv)
 {
+	vstack = stack_new();
+	ostack = stack_new();
+
 	char s[65536];
 	FILE* f = fopen(argv[1], "r");
 	fread(s, 65536, 1, f);
