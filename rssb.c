@@ -3,6 +3,9 @@
 #include <string.h>
 #include <limits.h>
 
+#define VMDEBUG 0
+#define ASMDEBUG 0
+#define LIBDEBUG 0
 
 // VM
 void vm(int* mem, int start)
@@ -14,11 +17,12 @@ void vm(int* mem, int start)
 	*pc = start;
 	*acc = 0;
 
-	while (1)
+	while (!(*pc == 2 && *acc == 1))
 	{
 		int op = mem[*pc];
+#if VMDEBUG
 		printf("pc = %d, op = %d, acc = %d, ", *pc, op, *acc);
-
+#endif
 		switch (op)
 		{
 			case 3:
@@ -27,9 +31,11 @@ void vm(int* mem, int start)
 				break;
 			}
 		}
-		
+
+
+#if VMDEBUG
 		printf("*op = %d, ", mem[op]);
-	
+#endif
 		if (op != 4)
 		{
 			mem[op] = *acc = mem[op] - *acc;
@@ -41,9 +47,9 @@ void vm(int* mem, int start)
 
 
 		(*pc) += *acc >= 0 ? 1 : 2;
-
+#if VMDEBUG
 		printf("acc = %d, pc = %d", *acc, *pc);
-
+#endif
 		switch (op)
 		{
 			case 2:
@@ -53,15 +59,19 @@ void vm(int* mem, int start)
 			}
 			case 4:
 			{
+#if VMDEBUG
 				printf(", output: %c (%d)", mem[op], mem[op]);
+#else
 				putchar(mem[op]);
+#endif
 				break;
 			}
 		}
-
+#if VMDEBUG
 		printf("\n");
 
 		usleep(100000);
+#endif
 	}
 }
 
@@ -102,7 +112,9 @@ int getsymbol(char* p)
 	//printf("getsymbol(\"%s\"): ", p);
 	while (*p != 0)
 	{
+#if LIBDEBUG
 		putchar(*p);
+#endif
 		symtab = symtab[*p].next;
 		if (symtab == NULL)
 		{
@@ -112,7 +124,9 @@ int getsymbol(char* p)
 		}
 		p++;
 	}
+#if LIBDEBUG
 	putchar('\n');
+#endif
 	return symtab[0].this;
 }
 
@@ -173,23 +187,31 @@ int operand_eval(operand* this)
 		return 0;
 	}
 
+#if LIBDEBUG
 	printf("operand_eval: ");
+#endif
 
 	switch (this->tp)
 	{
 		case INT:
 		{
+#if LIBDEBUG
 			printf("int: %d\n", this->val.val);
+#endif
 			return this->val.val;
 		}
 		case IDENT:
 		{
+#if LIBDEBUG
 			printf("label: %s\n", this->val.ident);
+#endif
 			return getsymbol(this->val.ident);
 		}
 		case BINOP:
 		{
+#if LIBDEBUG
 			printf("binop: %c\n", this->val.binop.op);
+#endif
 			int lhs = operand_eval(this->val.binop.operands[0]);
 			int rhs = operand_eval(this->val.binop.operands[1]);
 			switch (this->val.binop.op)
@@ -294,7 +316,9 @@ void stack_push(stack* this, void* v)
 	{
 		this->len *= 2;
 		this->base = realloc(this->base, this->len*sizeof(void*));
+#if LIBDEBUG
 		printf("resize stack to %d\n", this->len);
+#endif
 	}
 
 	this->base[this->top] = v;
@@ -354,14 +378,18 @@ int precedence(char op)
 }
 void fold(char nextop)
 {
+#if ASMDEBUG
 	printf("fold: nextop = %c (0x%x)\n", nextop, nextop);
+#endif
 
 	char topop;
 
 	while (precedence(nextop) < precedence(topop = stack_peek(ostack)))
 	{
 		char op = stack_pop(ostack);
+#if ASMDEBUG
 		printf("fold: op %c (0x%x)\n", op, op);
+#endif
 		operand* rhs = op != 'n' ? stack_pop(vstack) : NULL;
 		operand* lhs = stack_pop(vstack);
 		stack_push(vstack, binop_new(op, lhs, rhs));
@@ -398,11 +426,12 @@ int* assembler(char* p)
 	goto line;
 
 newline:
+#if ASMDEBUG
 	printf("\n");
+#endif
 
 	if (isinstr)
 	{
-	
 		mem[pc] = stack_pop(vstack);
 
 		pc++;
@@ -456,7 +485,9 @@ label_l:
 
 	char* s = tok2str(ts, p);
 	addsymbol(s, pc);
+#if ASMDEBUG
 	printf("label: %s\n", s);
+#endif
 	free(s);
 
 	goto line;
@@ -503,7 +534,9 @@ gap:
 	goto label_l;
 
 expr_entry:
+#if ASMDEBUG
 	printf("rssb\n");
+#endif
 	isinstr = 1;
 	{
 		char stray = stack_peek(ostack);
@@ -540,7 +573,9 @@ expr:
 	goto error;
 
 lparen:
+#if ASMDEBUG
 	printf("lparen: %c\n", *p);
+#endif
 	stack_push(ostack, '(');
 	p++;
 
@@ -558,7 +593,9 @@ num_l:
 	if (*p >= '0' && *p <= '9') { p++; goto num_l; }
 
 	s = tok2str(ts, p);
+#if ASMDEBUG
 	printf("num: %s\n", s);
+#endif
 	stack_push(vstack, int_new(atoi(s)));
 	free(s);
 
@@ -575,19 +612,25 @@ ident_l:
 	if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9') || *p == '_') { p++; goto ident_l; }
 
 	s = tok2str(ts, p);
+#if ASMDEBUG
 	printf("ident: %s\n", s);
+#endif
 	stack_push(vstack, ident_new(s));
 
 	goto operator;
 
 unm:
+#if ASMDEBUG
 	printf("unm: %c\n", *p);
+#endif
 	stack_push(ostack, 'n');
 	p++;
 	goto expr;
 
 here:
+#if ASMDEBUG
 	printf("here: %c\n", *p);
+#endif
 	stack_push(vstack, int_new(pc));
 	p++;
 	goto operator;
@@ -608,7 +651,9 @@ operator:
 		case '/' : 
 		{
 			fold(*p);
+#if ASMDEBUG
 			printf("operator: %c\n", *p);
+#endif
 			stack_push(ostack, *p);
 			p++; goto expr;
 		}
@@ -618,7 +663,9 @@ operator:
 	goto error;
 
 rparen:
+#if ASMDEBUG
 	printf("rparen: %c\n", *p);
+#endif
 	fold(')');
 	char lp = stack_pop(ostack);
 	if (lp != '(')
@@ -641,14 +688,18 @@ end:	; // silly compile error without the ;
 		mem2[i] = operand_eval(mem[i]);
 		operand_kill(mem[i]);
 
+#if ASMDEBUG
 		printf("%d: %d\n", i, mem2[i]);
+#endif
 	}
 	for (int i=0; i<pc; i++)
 	{
 		printf("%d: %d\n", i, mem2[i]);
 	}
 
+#if ASMDEBUG
 	puts("done");
+#endif
 	return mem2;
 }
 
