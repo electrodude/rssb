@@ -275,7 +275,7 @@ stack* stack_new()
 {
 	stack* this = malloc(sizeof(stack));
 
-	this->len = 1;
+	this->len = 16;
 	this->base = malloc(this->len*sizeof(void*));
 	this->top = 0;
 
