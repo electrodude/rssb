@@ -414,6 +414,11 @@ int* assembler(char* p)
 
 	int memlen = 64;
 	operand** mem = malloc(memlen*sizeof(operand*));
+	mem[0] = int_new(0);
+	mem[1] = int_new(0);
+	mem[2] = int_new(0);
+	mem[3] = int_new(0);
+	mem[4] = int_new(0);
 
 	addsymbol("ip", 0);
 	addsymbol("acc", 1);
