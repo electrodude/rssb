@@ -9,7 +9,7 @@ line := [label] ["rssb" expression] [";" comment] "\n"
 
 expression := label
             | number
-            | ("(" expression ")")
+            | "(" expression ")"
             | "-" expression
             | expression "+" expression
             | expression "-" expression
