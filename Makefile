@@ -1,5 +1,5 @@
 CFLAGS=-g -Og -std=c99
-LDCLAGS=
+LDFLAGS=
 
 CC=gcc
 LD=gcc
