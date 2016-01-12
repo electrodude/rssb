@@ -376,6 +376,7 @@ int precedence(char op)
 		default  : return INT_MIN;
 	}
 }
+
 void fold(char nextop)
 {
 #if ASMDEBUG
@@ -443,7 +444,7 @@ newline:
 		if (pc >= memlen)
 		{
 			memlen *= 2;
-			mem = realloc(mem, memlen*sizeof(int));
+			mem = realloc(mem, memlen*sizeof(operand*));
 		}
 	}
 	
