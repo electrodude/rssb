@@ -1,6 +1,6 @@
 ; RSSB Hello World, John Metcalf
 
-loop    rssb   acc       ; acc = character from ptr	; 5: 0
+loop    rssb   acc       ; acc = character from ptr	; 5: 1
 ptr     rssb   hello        				; 6: 33
 
         rssb   out       ; display character		; 7: 4
