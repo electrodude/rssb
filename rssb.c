@@ -343,7 +343,7 @@ void* stack_peek(stack* this)
 
 	return this->base[this->top];
 }
-	
+
 
 // assembler
 
@@ -447,7 +447,7 @@ newline:
 			mem = realloc(mem, memlen*sizeof(operand*));
 		}
 	}
-	
+
 	isinstr = 0;
 
 	goto line;
@@ -654,7 +654,7 @@ operator:
 		case '+' :
 		case '-' :
 		case '*' :
-		case '/' : 
+		case '/' :
 		{
 			fold(*p);
 #if ASMDEBUG
