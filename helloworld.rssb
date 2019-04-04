@@ -23,20 +23,22 @@ ptr     rssb   hello        				; 6: 33
         rssb   ip					; 17: 0
 loopoff rssb   $-loop					; 18: 13
 
-sum     rssb   -1116					; 19: -1116
+sum     rssb   -1139					; 19: -1139
 
 one     rssb   1					; 20: 1
 
-        rssb   33        ; '!'				; 21: 33
-        rssb   100       ; 'd'				; 22: 100
-        rssb   108       ; 'l'				; 23: 108
-        rssb   114       ; 'r'				; 24: 114
-        rssb   111       ; 'o'				; 25: 111
-        rssb   87        ; 'W'				; 26: 87
-        rssb   32        ; ' '				; 27: 32
-        rssb   44        ; ','				; 28: 44
-        rssb   111       ; 'o'				; 29: 111
-        rssb   108       ; 'l'				; 30: 108
-        rssb   108       ; 'l'				; 31: 108
-        rssb   101       ; 'e'				; 32: 101
-hello   rssb   72        ; 'H'				; 33: 72
+        rssb   13        ; '\r'                         ; 21: 10
+        rssb   10        ; '\n'                         ; 22: 13
+        rssb   33        ; '!'				; 23: 33
+        rssb   100       ; 'd'				; 24: 100
+        rssb   108       ; 'l'				; 25: 108
+        rssb   114       ; 'r'				; 26: 114
+        rssb   111       ; 'o'				; 27: 111
+        rssb   87        ; 'W'				; 28: 87
+        rssb   32        ; ' '				; 29: 32
+        rssb   44        ; ','				; 30: 44
+        rssb   111       ; 'o'				; 31: 111
+        rssb   108       ; 'l'				; 32: 108
+        rssb   108       ; 'l'				; 33: 108
+        rssb   101       ; 'e'				; 34: 101
+hello   rssb   72        ; 'H'				; 35: 72
