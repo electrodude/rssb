@@ -8,10 +8,10 @@
 #define LIBDEBUG 0
 
 // VM
-void vm(int* mem, int start)
+void vm(int *mem, int start)
 {
-	int* pc  = &mem[0];
-	int* acc = &mem[1];
+	int *pc  = &mem[0];
+	int *acc = &mem[1];
 	mem[2] = 0;
 
 	*pc = start;
@@ -78,24 +78,24 @@ void vm(int* mem, int start)
 
 // symbol table
 
-typedef union symtabentry
+union symtabentry
 {
-	union symtabentry* next;
+	union symtabentry *next;
 	int this;
-} symtabentry;
+};
 
-symtabentry symbols[256];
+union symtabentry symbols[256];
 
-void addsymbol(char* p, int pc)
+void addsymbol(char *p, int pc)
 {
-	symtabentry* symtab = symbols;
+	union symtabentry *symtab = symbols;
 
 	while (*p != 0)
 	{
-		symtabentry* symtab2 = symtab[*p].next;
+		union symtabentry *symtab2 = symtab[(unsigned char)*p].next;
 		if (symtab2 == NULL)
 		{
-			symtab2 = symtab[*p].next = calloc(256,sizeof(symtabentry));
+			symtab2 = symtab[(unsigned char)*p].next = calloc(256,sizeof(*symtab2));
 		}
 		symtab = symtab2;
 		p++;
@@ -103,11 +103,11 @@ void addsymbol(char* p, int pc)
 	symtab[0].this = pc;
 }
 
-int getsymbol(char* p)
+int getsymbol(char *p)
 {
-	char* s2 = p;
+	char *s2 = p;
 
-	symtabentry* symtab = symbols;
+	union symtabentry *symtab = symbols;
 
 	//printf("getsymbol(\"%s\"): ", p);
 	while (*p != 0)
@@ -115,7 +115,7 @@ int getsymbol(char* p)
 #if LIBDEBUG
 		putchar(*p);
 #endif
-		symtab = symtab[*p].next;
+		symtab = symtab[(unsigned char)*p].next;
 		if (symtab == NULL)
 		{
 			printf("\nUnknown symbol: %s\n", s2);
@@ -131,26 +131,24 @@ int getsymbol(char* p)
 }
 
 // expression
-typedef struct operand operand;
-
-typedef struct operand
+struct operand
 {
 	enum {INT, IDENT, BINOP} tp;
 	union
 	{
 		int val;
-		char* ident;
+		char *ident;
 		struct
 		{
-			operand* operands[2];
+			struct operand *operands[2];
 			char op;
 		} binop;
 	} val;
-} operand;
+};
 
-operand* int_new(int x)
+struct operand *int_new(int x)
 {
-	operand* this = malloc(sizeof(operand));
+	struct operand *this = malloc(sizeof(*this));
 
 	this->tp = INT;
 	this->val.val = x;
@@ -158,9 +156,9 @@ operand* int_new(int x)
 	return this;
 }
 
-operand* ident_new(char* p)
+struct operand *ident_new(char *p)
 {
-	operand* this = malloc(sizeof(operand));
+	struct operand *this = malloc(sizeof(*this));
 
 	this->tp = IDENT;
 	this->val.ident = p;
@@ -168,9 +166,9 @@ operand* ident_new(char* p)
 	return this;
 }
 
-operand* binop_new(char op, operand* lhs, operand* rhs)
+struct operand *binop_new(char op, struct operand *lhs, struct operand *rhs)
 {
-	operand* this = malloc(sizeof(operand));
+	struct operand *this = malloc(sizeof(*this));
 
 	this->tp = BINOP;
 	this->val.binop.op = op;
@@ -180,7 +178,7 @@ operand* binop_new(char op, operand* lhs, operand* rhs)
 	return this;
 }
 
-int operand_eval(operand* this)
+int operand_eval(struct operand *this)
 {
 	if (this == NULL)
 	{
@@ -246,7 +244,7 @@ int operand_eval(operand* this)
 	exit(1);
 }
 
-void operand_kill(operand* this)
+void operand_kill(struct operand *this)
 {
 	if (this == NULL)
 	{
@@ -284,38 +282,38 @@ void operand_kill(operand* this)
 
 // stack
 
-typedef struct cons
+struct cons
 {
-	struct cons* next;
-	void* this;
-} cons;
+	struct cons *next;
+	void *this;
+};
 
-typedef struct stack
+struct stack
 {
-	void** base;
+	void **base;
 	int top;
 	int len;
-} stack;
+};
 
-stack* stack_new()
+struct stack *stack_new()
 {
-	stack* this = malloc(sizeof(stack));
+	struct stack *this = malloc(sizeof(*this));
 
 	this->len = 16;
-	this->base = malloc(this->len*sizeof(void*));
+	this->base = malloc(this->len*sizeof(*this->base));
 	this->top = 0;
 
 	return this;
 }
 
-void stack_push(stack* this, void* v)
+void stack_push(struct stack *this, void *v)
 {
 	this->top++;
 
 	if (this->top >= this->len)
 	{
 		this->len *= 2;
-		this->base = realloc(this->base, this->len*sizeof(void*));
+		this->base = realloc(this->base, this->len*sizeof(*this->base));
 #if LIBDEBUG
 		printf("resize stack to %d\n", this->len);
 #endif
@@ -324,7 +322,7 @@ void stack_push(stack* this, void* v)
 	this->base[this->top] = v;
 }
 
-void* stack_pop(stack* this)
+void *stack_pop(struct stack *this)
 {
 	if (this->top <= 0)
 	{
@@ -334,7 +332,7 @@ void* stack_pop(stack* this)
 	return this->base[this->top--];
 }
 
-void* stack_peek(stack* this)
+void *stack_peek(struct stack *this)
 {
 	if (this->top <= 0)
 	{
@@ -347,13 +345,13 @@ void* stack_peek(stack* this)
 
 // assembler
 
-stack* vstack;
+struct stack *vstack;
 
-stack* ostack;
+struct stack *ostack;
 
-char* tok2str(char* start, char* end)
+char *tok2str(char *start, char *end)
 {
-	char* s = malloc(end - start + 1);
+	char *s = malloc(end - start + 1);
 
 	strncpy(s, start, end - start);
 
@@ -391,8 +389,8 @@ void fold(char nextop)
 #if ASMDEBUG
 		printf("fold: op %c (0x%x)\n", op, op);
 #endif
-		operand* rhs = op != 'n' ? stack_pop(vstack) : NULL;
-		operand* lhs = stack_pop(vstack);
+		struct operand *rhs = op != 'n' ? stack_pop(vstack) : NULL;
+		struct operand *lhs = stack_pop(vstack);
 		stack_push(vstack, binop_new(op, lhs, rhs));
 	}
 
@@ -403,18 +401,18 @@ void fold(char nextop)
 	}
 }
 
-int* assembler(char* p)
+int *assembler(char *p)
 {
-	char* ps = p;
+	char *ps = p;
 
-	char* ts = p;
+	char *ts = p;
 
-	//char* s;
+	//char *s;
 
 	int pc = 5;
 
 	int memlen = 64;
-	operand** mem = malloc(memlen*sizeof(operand*));
+	struct operand **mem = malloc(memlen*sizeof(*mem));
 	mem[0] = int_new(0);
 	mem[1] = int_new(0);
 	mem[2] = int_new(0);
@@ -444,7 +442,7 @@ newline:
 		if (pc >= memlen)
 		{
 			memlen *= 2;
-			mem = realloc(mem, memlen*sizeof(operand*));
+			mem = realloc(mem, memlen*sizeof(*mem));
 		}
 	}
 
@@ -489,7 +487,7 @@ label_l:
 	}
 	if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9') || *p == '_') { p++; goto label_l; }
 
-	char* s = tok2str(ts, p);
+	char *s = tok2str(ts, p);
 	addsymbol(s, pc);
 #if ASMDEBUG
 	printf("label: %s\n", s);
@@ -553,7 +551,7 @@ expr_entry:
 		}
 	}
 	{
-		operand* stray = stack_peek(vstack);
+		struct operand *stray = stack_peek(vstack);
 		if (stray != NULL)
 		{
 			printf("Error: stray value: %d\n", operand_eval(stray));
@@ -684,11 +682,11 @@ rparen:
 	goto operator;
 
 error:
-	printf("Parse error at %d\n", p-ps);
+	printf("Parse error at %zd\n", p-ps);
 	exit(1);
 
-end:	; // silly compile error without the ;
-	int* mem2 = malloc(pc*sizeof(int));
+end:;
+	int *mem2 = malloc(pc*sizeof(*mem2));
 	for (int i=0; i<pc; i++)
 	{
 		mem2[i] = operand_eval(mem[i]);
@@ -712,13 +710,19 @@ end:	; // silly compile error without the ;
 
 // main
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
+	if (argc < 2)
+	{
+		fprintf(stderr, "Usage: %s <program.rssb>\n", argv[0]);
+		exit(1);
+	}
+
 	vstack = stack_new();
 	ostack = stack_new();
 
 	char s[65536];
-	FILE* f = fopen(argv[1], "r");
+	FILE *f = fopen(argv[1], "r");
 	fread(s, 65536, 1, f);
 	fclose(f);
 	vm(assembler(s), 5);
