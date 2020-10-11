@@ -17,16 +17,13 @@ void vm(int *mem, int start)
 	*pc = start;
 	*acc = 0;
 
-	while (!(*pc == 2 && *acc == 1))
-	{
+	while (!(*pc == 2 && *acc == 1)) {
 		int op = mem[*pc];
 #if VMDEBUG
 		printf("pc = %d, op = %d, acc = %d, ", *pc, op, *acc);
 #endif
-		switch (op)
-		{
-			case 3:
-			{
+		switch (op) {
+			case 3: {
 				mem[op] = getchar();
 				break;
 			}
@@ -36,12 +33,9 @@ void vm(int *mem, int start)
 #if VMDEBUG
 		printf("*op = %d, ", mem[op]);
 #endif
-		if (op != 4)
-		{
+		if (op != 4) {
 			mem[op] = *acc = mem[op] - *acc;
-		}
-		else
-		{
+		} else {
 			mem[op] = *acc;
 		}
 
@@ -50,15 +44,12 @@ void vm(int *mem, int start)
 #if VMDEBUG
 		printf("acc = %d, pc = %d", *acc, *pc);
 #endif
-		switch (op)
-		{
-			case 2:
-			{
+		switch (op) {
+			case 2: {
 				mem[op] = 0;
 				break;
 			}
-			case 4:
-			{
+			case 4: {
 #if VMDEBUG
 				printf(", output: %c (%d)", mem[op], mem[op]);
 #else
@@ -90,10 +81,9 @@ void addsymbol(char *p, int pc)
 {
 	union symtabentry *symtab = symbols;
 
-	while (*p != 0)
-	{
+	while (*p) {
 		union symtabentry *symtab2 = symtab[(unsigned char)*p].next;
-		if (symtab2 == NULL)
+		if (!symtab2)
 		{
 			symtab2 = symtab[(unsigned char)*p].next = calloc(256,sizeof(*symtab2));
 		}
@@ -110,14 +100,12 @@ int getsymbol(char *p)
 	union symtabentry *symtab = symbols;
 
 	//printf("getsymbol(\"%s\"): ", p);
-	while (*p != 0)
-	{
+	while (*p) {
 #if LIBDEBUG
 		putchar(*p);
 #endif
 		symtab = symtab[(unsigned char)*p].next;
-		if (symtab == NULL)
-		{
+		if (!symtab) {
 			printf("\nUnknown symbol: %s\n", s2);
 			exit(1);
 			return -1;
@@ -180,58 +168,46 @@ struct operand *binop_new(char op, struct operand *lhs, struct operand *rhs)
 
 int operand_eval(struct operand *this)
 {
-	if (this == NULL)
-	{
+	if (!this)
 		return 0;
-	}
 
 #if LIBDEBUG
 	printf("operand_eval: ");
 #endif
 
-	switch (this->tp)
-	{
-		case INT:
-		{
+	switch (this->tp) {
+		case INT: {
 #if LIBDEBUG
 			printf("int: %d\n", this->val.val);
 #endif
 			return this->val.val;
 		}
-		case IDENT:
-		{
+		case IDENT: {
 #if LIBDEBUG
 			printf("label: %s\n", this->val.ident);
 #endif
 			return getsymbol(this->val.ident);
 		}
-		case BINOP:
-		{
+		case BINOP: {
 #if LIBDEBUG
 			printf("binop: %c\n", this->val.binop.op);
 #endif
 			int lhs = operand_eval(this->val.binop.operands[0]);
 			int rhs = operand_eval(this->val.binop.operands[1]);
-			switch (this->val.binop.op)
-			{
-				case '+':
-				{
+			switch (this->val.binop.op) {
+				case '+': {
 					return lhs + rhs;
 				}
-				case '-':
-				{
+				case '-': {
 					return lhs - rhs;
 				}
-				case '*':
-				{
+				case '*': {
 					return lhs * rhs;
 				}
-				case '/':
-				{
+				case '/': {
 					return lhs / rhs;
 				}
-				case 'n':
-				{
+				case 'n': {
 					return -lhs;
 				}
 			}
@@ -246,30 +222,23 @@ int operand_eval(struct operand *this)
 
 void operand_kill(struct operand *this)
 {
-	if (this == NULL)
-	{
+	if (!this)
 		return;
-	}
 
-	switch (this->tp)
-	{
-		case INT:
-		{
+	switch (this->tp) {
+		case INT: {
 			break;
 		}
-		case IDENT:
-		{
+		case IDENT: {
 			free(this->val.ident);
 			break;
 		}
-		case BINOP:
-		{
+		case BINOP: {
 			operand_kill(this->val.binop.operands[0]);
 			operand_kill(this->val.binop.operands[1]);
 			break;
 		}
-		default:
-		{
+		default: {
 			printf("Error: unknown value type: %d\n", this->tp);
 			//exit(1); // who cares about memory leaks? :)
 			break;
@@ -281,12 +250,6 @@ void operand_kill(struct operand *this)
 
 
 // stack
-
-struct cons
-{
-	struct cons *next;
-	void *this;
-};
 
 struct stack
 {
@@ -310,8 +273,7 @@ void stack_push(struct stack *this, void *v)
 {
 	this->top++;
 
-	if (this->top >= this->len)
-	{
+	if (this->top >= this->len) {
 		this->len *= 2;
 		this->base = realloc(this->base, this->len*sizeof(*this->base));
 #if LIBDEBUG
@@ -325,9 +287,7 @@ void stack_push(struct stack *this, void *v)
 void *stack_pop(struct stack *this)
 {
 	if (this->top <= 0)
-	{
 		return NULL;
-	}
 
 	return this->base[this->top--];
 }
@@ -335,9 +295,7 @@ void *stack_pop(struct stack *this)
 void *stack_peek(struct stack *this)
 {
 	if (this->top <= 0)
-	{
 		return NULL;
-	}
 
 	return this->base[this->top];
 }
@@ -362,8 +320,7 @@ char *tok2str(char *start, char *end)
 
 int precedence(char op)
 {
-	switch (op)
-	{
+	switch (op) {
 		case 'n' : return 6;
 		case '/' : return 5;
 		case '*' : return 4;
@@ -383,8 +340,7 @@ void fold(char nextop)
 
 	char topop;
 
-	while (precedence(nextop) < precedence(topop = stack_peek(ostack)))
-	{
+	while (precedence(nextop) < precedence(topop = stack_peek(ostack))) {
 		char op = stack_pop(ostack);
 #if ASMDEBUG
 		printf("fold: op %c (0x%x)\n", op, op);
@@ -394,8 +350,7 @@ void fold(char nextop)
 		stack_push(vstack, binop_new(op, lhs, rhs));
 	}
 
-	if (nextop == 0 && stack_peek(ostack) == '(')
-	{
+	if (nextop == 0 && stack_peek(ostack) == '(') {
 		printf("Error: unmatched left parentheses\n");
 		exit(1);
 	}
@@ -406,8 +361,6 @@ int *assembler(char *p)
 	char *ps = p;
 
 	char *ts = p;
-
-	//char *s;
 
 	int pc = 5;
 
@@ -434,13 +387,11 @@ newline:
 	printf("\n");
 #endif
 
-	if (isinstr)
-	{
+	if (isinstr) {
 		mem[pc] = stack_pop(vstack);
 
 		pc++;
-		if (pc >= memlen)
-		{
+		if (pc >= memlen) {
 			memlen *= 2;
 			mem = realloc(mem, memlen*sizeof(*mem));
 		}
@@ -453,8 +404,7 @@ newline:
 line:
 	//printf("line\n", *p);
 	//printf("line: %c\n", *p);
-	switch (*p)
-	{
+	switch (*p) {
 		case 0   : goto end;
 		case ';' : p++; goto comment;
 		case 'r' : ts = p; p++; goto s;
@@ -468,9 +418,8 @@ line:
 
 comment:
 	//printf("comment: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto end;
+	switch (*p) {
+		case '\0': goto end;
 		case '\n':
 		case '\r': p++; goto newline;
 	}
@@ -481,9 +430,8 @@ label:
 	ts = p;
 label_l:
 	//printf("label: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto error;
+	switch (*p) {
+		case '\0': goto error;
 	}
 	if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9') || *p == '_') { p++; goto label_l; }
 
@@ -498,9 +446,8 @@ label_l:
 
 s:
 	//printf("s: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto end;
+	switch (*p) {
+		case '\0': goto end;
 		case 's' : p++; goto s2;
 	}
 
@@ -508,9 +455,8 @@ s:
 
 s2:
 	//printf("s2: %c\n", *p);
-	switch(*p)
-	{
-		case 0   : goto end;
+	switch (*p) {
+		case '\0': goto end;
 		case 's' : p++; goto b;
 	}
 
@@ -518,9 +464,8 @@ s2:
 
 b:
 	//printf("b: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto end;
+	switch (*p) {
+		case '\0': goto end;
 		case 'b' : p++; goto gap;
 	}
 
@@ -528,9 +473,8 @@ b:
 
 gap:
 	//printf("gap: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto end;
+	switch (*p) {
+		case '\0': goto end;
 		case ' ' :
 		case '\t': goto expr_entry;
 	}
@@ -544,16 +488,14 @@ expr_entry:
 	isinstr = 1;
 	{
 		char stray = stack_peek(ostack);
-		if (stray != 0)
-		{
+		if (stray) {
 			printf("Error: stray operator: %c\n", stray);
 			exit(1);
 		}
 	}
 	{
 		struct operand *stray = stack_peek(vstack);
-		if (stray != NULL)
-		{
+		if (stray) {
 			printf("Error: stray value: %d\n", operand_eval(stray));
 			exit(1);
 		}
@@ -561,9 +503,8 @@ expr_entry:
 
 expr:
 	//printf("expr: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto end;
+	switch (*p) {
+		case '\0': goto end;
 		case ' ' :
 		case '\t': p++; goto expr;
 		case '$' : goto here;
@@ -589,9 +530,8 @@ num:
 	ts = p;
 num_l:
 	//printf("num: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto error;
+	switch (*p) {
+		case '\0': goto error;
 	}
 
 	if (*p >= '0' && *p <= '9') { p++; goto num_l; }
@@ -609,9 +549,8 @@ ident:
 	ts = p;
 ident_l:
 	//printf("ident: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto error;
+	switch (*p) {
+		case '\0': goto error;
 	}
 	if ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9') || *p == '_') { p++; goto ident_l; }
 
@@ -641,9 +580,8 @@ here:
 
 operator:
 	//printf("operator: %c\n", *p);
-	switch (*p)
-	{
-		case 0   : goto error;
+	switch (*p) {
+		case '\0': goto error;
 		case ' ' :
 		case '\t': p++; goto operator;
 		case '\n':
@@ -672,8 +610,7 @@ rparen:
 #endif
 	fold(')');
 	char lp = stack_pop(ostack);
-	if (lp != '(')
-	{
+	if (lp != '(') {
 		printf("Error: unmatched right parentheses");
 		exit(1);
 	}
@@ -687,8 +624,7 @@ error:
 
 end:;
 	int *mem2 = malloc(pc*sizeof(*mem2));
-	for (int i=0; i<pc; i++)
-	{
+	for (int i=0; i<pc; i++) {
 		mem2[i] = operand_eval(mem[i]);
 		operand_kill(mem[i]);
 
@@ -696,8 +632,7 @@ end:;
 		printf("%d: %d\n", i, mem2[i]);
 #endif
 	}
-	for (int i=0; i<pc; i++)
-	{
+	for (int i=0; i<pc; i++) {
 		printf("%d: %d\n", i, mem2[i]);
 	}
 
@@ -712,8 +647,7 @@ end:;
 
 int main(int argc, char **argv)
 {
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		fprintf(stderr, "Usage: %s <program.rssb>\n", argv[0]);
 		exit(1);
 	}
