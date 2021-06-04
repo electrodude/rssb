@@ -647,17 +647,26 @@ end:;
 
 int main(int argc, char **argv)
 {
-	if (argc < 2) {
+	if (argc != 2) {
 		fprintf(stderr, "Usage: %s <program.rssb>\n", argv[0]);
-		exit(1);
+		return 1;
 	}
+
+	const char *path = argv[1];
 
 	vstack = stack_new();
 	ostack = stack_new();
 
 	char s[65536];
-	FILE *f = fopen(argv[1], "r");
+	FILE *f = strcmp(path, "-") ? fopen(path, "r") : stdin;
+	if (!f) {
+		fprintf(stderr, "Failed to open %s\n", path);
+		return 1;
+	}
 	fread(s, 65536, 1, f);
-	fclose(f);
+	if (f != stdin)
+		fclose(f);
 	vm(assembler(s), 5);
+
+	return 0;
 }
